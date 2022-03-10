@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/head :: head ('Dashboard', 'dashboard')">
+</head>
+<div th:replace="fragments/background :: logged-in-bg"></div>
+<header th:replace="fragments/header :: header"></header>
+<body>
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-8">
+            <label for="opoSelect">Opo:</label>
+            <select name="opoSelect" class="form-control form-control-md d-flex align-items-end" id="opoSelect" onload="sendRequest('students', opoSelector.value)" onchange="sendRequest('students', opoSelector.value)">
+            </select>
+        </div>
+        <div class="col-4">
+            <label>Voeg jezelf toe aan de huidige opo: </label>
+            <button type="button" class="btn btn-primary d-flex align-items-end" id="addSelfToOpo">VOEG TOE</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col group" id="students">
+            <h3 onclick="sendRequest('students', opoSelector.value)">Studenten</h3>
+            <div class="row justify-content-center"><button class="btn col-10 btn-secundary my-2" onclick="newObject('student')">Student +</button></div>
+            <!----Filter -->
+            <div class="field my-2">
+                <label for="statusSelector">Status search:</label>
+                <select name="status" id="statusSelector" class="form-control form-control-lg"
+                        onchange="sendRequest('students', opoSelector.value)">
+                    <option value="all" selected>All</option>
+                    <option value="searching">Searching</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="approved">Approved</option>
+                </select>
+            </div>
+            <!----Add student -->
+            <div class="row my-2">
+                <div class="col"><form th:action="@{/csvupload}" class="col" id="uploadForm" method="post" enctype="multipart/form-data">
+                    <label for="file">Voeg meerdere studenten toe:</label>
+                    <input type="file" name="file" id="file" placeholder="upload CSV file">
+                    <button type="submit" id="csvupload" class="btn btn-primary my-2">Upload</button>
+                </form></div>
+
+            </div>
+
+        </div>
+
+        <div class="col group" id="coordinators">
+            <h3 onclick="sendRequest('coordinators',opoSelector.value)">Coordinatoren</h3>
+            <div class="row justify-content-center">
+                <button class="col-10 btn btn-secundary btn btn-secundary my-2" id="newCoordinator" onclick="newObject('coordinator')">Coordinator
+                    +
+                </button>
+            </div>
+
+        </div>
+        <div class="col group" id="companies" onclick="sendRequest('companies', opoSelector.value)">
+            <h3>Bedrijven</h3>
+        </div>
+    </div>
+
+    <div class="row">
+        <h4 id="tableTitle">Studenten</h4>
+        <div class="table-wrapper">
+            <table class="table table-hover table-borderless" id="dashTable">
+
+                <thead id="tablehead">
+                <tr>
+                    <th scope="col" id="headnumber">Student nummer</th>
+                    <th scope="col" id="headname">Naam</th>
+                    <th scope="col" id="headstatus">Status</th>
+                    <th scope="col" id="headinternship">Stage</th>
+                    <th scope="col" id="heademail">Email</th>
+                </tr>
+                </thead>
+
+                <tbody id="tableBody">
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="userModal" class="modal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="row justify-content-between">
+                    <div class="col border border-light mx-auto mt-2 p-md-5 justify-content-space-between">
+                        <h4 id="modalTitle"></h4>
+                        <form action="#" method="post" id="studentForm">
+                            <div class="field my-2 row">
+                                <label for="firstname">Voornaam:</label>
+                                <input type="text" id="firstname" placeholder="Jan">
+                                <small></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="lastname">Achternaam:</label>
+                                <input type="text" id="lastname" placeholder="Peeters">
+                                <small></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="studNum">Studentennummer:</label>
+                                <input type="text" id="studNum" placeholder="r12345678">
+                                <small></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="company">Stage bij:</label>
+                                <input type="text" id="company" placeholder="--werkt nog niet--">
+                                <a type="button" class="btn btn-secundary">Bekijk</a>
+                                <small></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="email">Email:</label>
+                                <input type="email" id="email">
+                                <small></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="status">Status:</label>
+                                <select name="status" id="status">
+                                    <option value="searching">Searching</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="approved">Approved</option>
+                                </select>
+                                <small></small>
+                            </div>
+                            <div class="row justify-content-center">
+                                <button type="submit" class="btn btn-secundary mx-1 col-2" id="save">Opslaan</button>
+                                <button type="button" class="btn btn-secundary mx-1 col-2" id="cancel">Terug</button>
+                                <button type="button" class="btn btn-secundary mx-1 col-2" id="inactive">Archiveer</button>
+                                <button type="button" class="btn btn-secundary mx-1 col-3" id="resetPassword">Reset password</button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="application/javascript" th:inline="javascript">
+
+
+    //elements
+    const form = document.getElementById("studentForm");
+    const firstname = form.elements['firstname']
+    const lastname = form.elements['lastname']
+    const studNum = form.elements['studNum']
+    const email = form.elements['email']
+    const status = form.elements['status']
+    const company = form.elements['company']
+    const modalTitle = document.getElementById("modalTitle")
+    let elementsArray = Array.from(form.elements)
+    let statusSelect = document.getElementById("statusSelector")
+    const tableBody = document.getElementById("tableBody")
+    const studentsDiv = document.getElementById('students')
+    const coordinatorsDiv = document.getElementById('coordinators')
+    const companiesDiv = document.getElementById('companies')
+    let opoSelector = document.getElementById("opoSelect")
+    const coordinator = [[${user.id}]]
+    let opos = [];
+
+    //buttons
+    const saveButton = document.getElementById("save")
+    const cancelButton = document.getElementById("cancel")
+    const inactiveButton = document.getElementById("inactive")
+    const resetPwButton = document.getElementById("resetPassword")
+    const addToOpoButton = document.getElementById("addSelfToOpo")
+
+
+    //csrf token
+    let token = document.head.querySelector("meta[name='_csrf']").getAttribute("content")
+    let header = document.head.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    //checks if element value is not empty
+    function checkIfNotEmpty(e) {
+        return e.value.trim() !== "";
+    }
+
+    //resets form
+    function resetForm() {
+        elementsArray.forEach(e => e.value = "");
+    }
+
+    //get opo's from server
+    const getOpos = function() {
+        opos = [];
+        fetch("/coordinator/allopos", {
+            method: "GET",
+        }).then(response => response.json())
+            .then(data => {
+                console.log(data)
+                data.forEach(opo => {
+                    opos.push(opo)
+                    let newOption = document.createElement('option')
+                    newOption.textContent = opo['course'] + " - " + opo['startDate'] + " - " + opo['program']
+                    newOption.value = opo['id']
+                    opoSelector.append(newOption)
+                    console.log(opo['id'])
+                })
+
+                sendRequest('students', opoSelector.value)
+            })
+    }
+
+    getOpos();
+
+
+    /*
+    Opens modal to create new user
+     */
+    function newObject(type) {
+        resetForm()
+        modalTitle.innerText = type === "student" ? "Nieuwe student" : type === "coordinator" ? "Nieuwe coordinator" : type === "company" ? "Nieuw bedrijf" : null;
+        let allElements
+        switch (type) {
+            case "student":
+                email.parentNode.style.display = "none"
+                allElements = elementsArray.filter(e => {
+                    return e.id === 'firstname' || e.id === 'lastname' || e.id === 'studNum'
+                })
+                break;
+            case "coordinator":
+                allElements = elementsArray.filter(e => {
+                    return e.id === 'firstname' || e.id === 'lastname' || e.id === 'studNum' || e.id === 'email' || e.id === 'opo'
+                })
+                break;
+        }
+        status.parentNode.style.display = "none"
+        company.parentNode.style.display = "none"
+        inactiveButton.style.display = "none"
+        resetPwButton.style.display = "none"
+        $('#userModal').modal("show");
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!allElements.every(checkIfNotEmpty)) {
+                allElements.forEach(el => {
+                    el.parentNode.querySelector("small").innerText = el.getAttribute("id") + " kan niet leeg zijn";
+                })
+            } else {
+                let objectPost
+
+                switch (type) {
+                    case "student":
+                        objectPost = {
+                            student: {
+                                firstname: firstname.value,
+                                lastname: lastname.value,
+                                studentNumber: studNum.value,
+                                opos: [opos.find(o => o.id.toString() === opoSelector.value)],
+                                status: 'SEARCHING',
+                                active: true
+                            },
+                            coordinator: {}
+                        }
+                        break;
+
+                    case "coordinator": {
+                        objectPost = {
+                            coordinator: {
+                                firstname: firstname.value,
+                                lastname: lastname.value,
+                                coordinatorNumber: studNum.value,
+                                active: true,
+                                email: email.value,
+                                opos: [opos.find(o => o.id.toString() === opoSelector.value)],
+                            },
+                            student: {}
+                        }
+                        break;
+                    }
+                }
+                fetch("/coordinator/newobject", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': token
+                    },
+                    body: JSON.stringify(objectPost)
+                }).then(async response => {
+                    let res = response.text()
+                    if (await res === "false") {
+                        studNum.parentNode.querySelector("small").innerText = "Dit nummer is reeds geregistreerd";
+                    } else {
+                        window.location.href = await res;
+                    }
+                })
+            }
+        })
+    }
+
+    cancelButton.onclick = () => window.location.href = "/coordinator/dashboard"
+
+    /*
+    Gets a list of users (student, coordinator or company)
+     */
+    function sendRequest(type, opo) {
+        tableBody.innerHTML = "";
+        function call() {
+            if (type === "students") {
+                toggle_selection(type)
+                return "?status="
+            }
+            if (type === "coordinators") {
+               toggle_selection(type)
+                return "?input="
+            }
+            if (type === "companies") {
+                toggle_selection(type)
+                return "?input="
+            }
+        }
+
+        let url = `dashboard/${type}${call()}${type === "students" ? statusSelect.value : "all"}&opoId=${opo}`
+        fetch(url, {
+            method: "GET"
+        }).then(response => response.json())
+            .then(data => {
+                console.log(type)
+                let objects = data[type]
+                console.log(objects)
+                if (objects !== undefined) {
+                    objects.forEach(object => {
+                        //create elements
+                        let row = document.createElement("tr")
+                        let head = document.createElement("th")
+                        let email = document.createElement("td")
+                        let status = document.createElement("td");
+                        let name = document.createElement("td")
+                        let stage = document.createElement("td");
+                        tableBody.appendChild(row);
+                        //set attributes
+                        row.setAttribute("onclick", `getUser(${object.id}, ${type})`)
+                        head.setAttribute("scope", "row")
+                        head.textContent = type === "companies" ? object['id'] : object[`${type.substring(0, type.length - 1)}Number`]
+                        name.textContent = type === "companies" ? object['companyName'] : object['firstname'] + " " + object['lastname']
+                        email.textContent = object['email']
+                        status.textContent = object['status']
+                        stage.textContent = object['company']
+                        //append to parent
+                        row.appendChild(head);
+                        row.appendChild(name);
+                        if (type === "students") {
+                            document.getElementById('tableTitle').innerHTML = "Studenten"
+                            document.getElementById("headnumber").innerHTML = "Student number"
+                            document.getElementById("headinternship").style.display = "table-cell"
+                            document.getElementById("headstatus").style.display = "table-cell"
+                            row.appendChild(status);
+                            row.appendChild(stage);
+                            row.appendChild(email);
+                        }
+                        else if (type === "coordinators") {
+                            document.getElementById('tableTitle').innerHTML = "Coordinatoren"
+                            document.getElementById("headnumber").innerHTML = "Coordinator number"
+                            document.getElementById("headstatus").style.display = "none"
+                            document.getElementById("headinternship").style.display = "none"
+                            row.appendChild(email);
+                        }
+                        else if (type === "companies") {
+                            let address = document.createElement("td");
+                            let website = document.createElement("td");
+                            address.textContent = object['street'] +" "+object['number'] +" "+object['city']
+                            website.textContent = object['website']
+                            document.getElementById('tableTitle').innerHTML = "Bedrijven"
+                            document.getElementById("headnumber").innerHTML = "Bedrijven ID"
+                            document.getElementById("headstatus").style.display = "none"
+                            document.getElementById("headinternship").style.display = "none"
+                            document.getElementById("heademail").innerHTML = "Adres"
+                            row.appendChild(address)
+                            row.appendChild(website)
+
+                        }
+
+                    })
+                }
+            })
+    }
+
+    /*
+    Gets a user (student, coordinator or company)(depends on current view)
+    and opens modal with user details
+     */
+    function getUser(id, type) {
+        type = type.getAttribute('id')
+        let objectGet
+        modalTitle.innerHTML = `Edit ${type}`;
+        if (type === "students") {
+            status.parentNode.style.display = "block"
+            company.parentNode.style.display = "block"
+        }
+        email.parentNode.style.display = "block"
+        inactiveButton.style.display = "block"
+        let url = `/coordinator/get${type}details/${id}`
+        fetch(url, {
+            method: "GET"
+        }).then(async response => {
+            objectGet = JSON.parse(await response.text())
+            if (type === "students") {
+                company.value = objectGet.company !== null ? object.company.companyName : null;
+                studNum.value = objectGet.studentNumber
+                status.value = objectGet.status
+                let index;
+                if (objectGet.status !== null) {
+                    switch (objectGet.status.toLowerCase()) {
+                        case "searching":
+                            index = 0;
+                            break;
+                        case "contacted":
+                            index = 1;
+                            break;
+                        case "approved":
+                            index = 2;
+                            break;
+                    }
+                } else {
+                    index = 0
+                }
+                status.options[index].selected = true;
+            } else {
+                studNum.value = objectGet.coordinatorNumber
+                company.parentNode.style.display = "none"
+                status.parentNode.style.display = "none"
+            }
+            firstname.value = objectGet.firstname
+            lastname.value = objectGet.lastname
+            email.value = objectGet.email
+            resetPwButton.style.display = "block"
+            $('#userModal').modal("show");
+        })
+        form.addEventListener("submit", (event) => {
+            event.preventDefault()
+            let url = `/coordinator/save${type}details/${id}`
+            //build object
+            let objectPost;
+            if (type === 'students') {
+                objectPost =
+                    {
+                        student: {
+                            id: id,
+                            firstname: firstname.value,
+                            lastname: lastname.value,
+                            email: email.value,
+                            company: company.value || null,
+                            studentNumber: studNum.value,
+                            status: status.value.toUpperCase(),
+                            password: objectGet.password,
+                            active: objectGet.active,
+                            opos: objectGet.opos
+                        },
+
+                        coordinator: {}
+                    }
+            }
+            if (type === 'coordinators') {
+                objectPost = {
+                    coordinator: {
+                        id: id,
+                        firstname: firstname.value,
+                        lastname: lastname.value,
+                        email: email.value,
+                        coordinatorNumber: studNum.value,
+                        password: objectGet.password,
+                        active: objectGet.active,
+                        opos: objectGet.opos
+                    },
+
+                    student: {}
+                }
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token
+                },
+                body: JSON.stringify(objectPost)
+            }).then(async response => {
+                let res = await response.text();
+                if (res === 'false') {
+                    studNum.parentNode.querySelector("small").innerText = "Dit nummer is reeds geregistreerd";
+                } else {
+                    window.location.href = res;
+                }
+            })
+        })
+        resetPwButton.onclick = () => {
+            fetch("/coordinator/resetpassword/" + id, {
+                method: "GET"
+            }).then(async response => {
+                if (response.status === 200) {
+                    window.location.href = await response.text();
+                }
+            })
+        }
+        inactiveButton.onclick = () => {
+            fetch("/coordinator/setinactive/" + id, {
+                method: "GET"
+            }).then(async response => {
+                if (response.status === 200) {
+                    window.location.href = await response.text();
+                } else {
+                    status.parentNode.querySelector("small").innerText = "status change failed"
+                }
+            })
+        }
+
+    }
+
+    addToOpoButton.addEventListener('click', event => {
+        fetch(`/coordinator/dashboard/addtoopo/${coordinator}?opo=${opoSelector.value}`, {
+            method: "GET"
+        }).then(async response => {
+            if (response.status === 200) {
+                window.location.href = await response.text();
+                console.log("goodtogo")
+            } else {
+                console.log("failed to add to opo")
+            }
+        })
+    })
+
+    document.getElementById("csvupload").addEventListener("click", event => {
+        console.log("clicked")
+        event.preventDefault()
+        document.getElementById("uploadForm").submit()
+    })
+
+    function toggle_selection(type) {
+        let arrayOfGroup = Array.from(document.getElementsByClassName('group'))
+        arrayOfGroup.forEach(div => {
+            if(div.getAttribute('id') === type){
+                if (div.classList.contains('inactive')){
+                    div.classList.remove('inactive')
+                }
+            }
+            else{
+                if (!div.classList.contains('inactive')){
+                    div.classList.add('inactive')
+                }
+            }
+        })
+
+    }
+</script>
+
+
+<div th:replace="fragments/js :: bootstrapjs"></div>
+</body>
+</html>
