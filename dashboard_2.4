@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/head :: head ('Dashboard', 'dashboard')">
+</head>
+<div th:replace="fragments/background :: logged-in-bg"></div>
+<header th:replace="fragments/header :: header"></header>
+<body>
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-8">
+            <label for="opoSelect">Opo:</label>
+            <select name="opoSelect" class="form-control form-control-md d-flex align-items-end" id="opoSelect" onload="sendRequest('students', opoSelector.value)" onchange="sendRequest('students', opoSelector.value)">
+            </select>
+        </div>
+        <div class="col-4">
+            <label>Voeg jezelf toe aan de huidige opo: </label>
+            <button type="button" class="btn btn-primary d-flex align-items-end" id="addSelfToOpo">VOEG TOE</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col group" id="students">
+            <h3 onclick="sendRequest('students', opoSelector.value)">Studenten</h3>
+            <div class="row justify-content-center"><button class="btn col-10 btn-secundary my-2" onclick="newObject('student')">Student +</button></div>
+            <!----Filter -->
+            <div class="field my-2">
+                <label for="statusSelector">Status search:</label>
+                <select name="status" id="statusSelector" class="form-control form-control-lg"
+                        onchange="sendRequest('students', opoSelector.value)">
+                    <option value="all" selected>All</option>
+                    <option value="searching">Searching</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="approved">Approved</option>
+                </select>
+            </div>
+            <!----Add student -->
+            <div class="row my-2">
+                <div class="col">
+                    <form class="col" id="uploadForm" th:action="@{/csvupload/1}"   method="post" enctype="multipart/form-data">
+                    <label for="file">Voeg meerdere studenten toe:</label>
+                    <input type="file" name="file" id="file" placeholder="upload CSV file">
+<!--                        <input type="text" name="hiddenopo" id="hiddenopo" value="1">-->
+                    <button type="submit" id="csvupload" class="btn btn-primary my-2">Upload</button>
+                </form>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col group" id="coordinators">
+            <h3 onclick="sendRequest('coordinators',opoSelector.value)">Coordinatoren</h3>
+            <div class="row justify-content-center">
+                <button class="col-10 btn btn-secundary btn btn-secundary my-2" id="newCoordinator" onclick="newObject('coordinator')">Coordinator
+                    +
+                </button>
+            </div>
+
+        </div>
+        <div class="col group" id="companies" onclick="sendRequest('companies', opoSelector.value)">
+            <h3>Bedrijven</h3>
+        </div>
+    </div>
+
+    <div class="row">
+        <h4 id="tableTitle">Studenten</h4>
+        <div class="table-wrapper">
+            <table class="table table-hover table-borderless" id="dashTable">
+
+                <thead id="tablehead">
+                <tr>
+                    <th scope="col" id="headnumber">Student nummer</th>
+                    <th scope="col" id="headname">Naam</th>
+                    <th scope="col" id="headstatus">Status</th>
+                    <th scope="col" id="headinternship">Stage</th>
+                    <th scope="col" id="heademail">Email</th>
+                </tr>
+                </thead>
+
+                <tbody id="tableBody">
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="userModal" class="modal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="row justify-content-between">
+                    <div class="col border border-light mx-auto mt-2 p-md-5 justify-content-space-between">
+                        <h4 id="modalTitle"></h4>
+                        <form action="#" method="post" id="studentForm">
+                            <div class="field my-2 row">
+                                <label for="firstname">Voornaam:</label>
+                                <input type="text" id="firstname" placeholder="Jan">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="lastname">Achternaam:</label>
+                                <input type="text" id="lastname" placeholder="Peeters">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="number">Gebruikernummer:</label>
+                                <input type="text" id="number" placeholder="r12345678">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="companyName">Bedrijfsnaam:</label>
+                                <input type="text" id="companyName" placeholder="2345">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="street">Straat:</label>
+                                <input type="text" id="street" placeholder="Molenbaan">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="streetnumber">Nummer:</label>
+                                <input type="text" id="streetnumber" placeholder="55">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="postalcode">Postcode:</label>
+                                <input type="text" id="postalcode" placeholder="2345">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="city">Stad:</label>
+                                <input type="text" id="city" placeholder="2345">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="company">Stage bij:</label>
+                                <input type="text" id="company" placeholder="--werkt nog niet--">
+                                <a type="button" class="btn btn-secundary">Bekijk</a>
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="email">Email:</label>
+                                <input type="email" id="email">
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="field my-2 row">
+                                <label for="status">Status:</label>
+                                <select name="status" id="status">
+                                    <option value="searching">Searching</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="approved">Approved</option>
+                                </select>
+                                <small class="error_info"></small>
+                            </div>
+                            <div class="row justify-content-center" id="buttons">
+                                <button type="button" class="btn btn-secundary mx-1 col" id="saveNew">Opslaan</button>
+                                <button type="button" class="btn btn-secundary mx-1 col" id="saveEdit">Opslaan</button>
+                                <button type="button" class="btn btn-secundary mx-1 col" id="cancel">Terug</button>
+                                <button type="button" class="btn btn-secundary mx-1 col" id="inactive">Archiveer</button>
+                                <button type="button" class="btn btn-secundary mx-1 col" id="resetPassword">Reset password</button>
+                                <button type="button" class="btn btn-secundary mx-1 col" id="companyApprove">Bedrijf goedkeuren</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script type="application/javascript" th:inline="javascript">
+
+    //elements
+    const form = document.getElementById("studentForm");
+    const uploadForm = document.getElementById("uploadForm");
+    const firstname = form.elements['firstname']
+    const lastname = form.elements['lastname']
+    const number = form.elements['number']
+    const email = form.elements['email']
+    const status = form.elements['status']
+    const company = form.elements['company']
+    const companyName = form.elements['companyName']
+    const street = form.elements['street']
+    const streetnumber = form.elements['streetnumber']
+    const postalcode = form.elements['postalcode']
+    const city = form.elements['city']
+    const modalTitle = document.getElementById("modalTitle")
+    let elementsArray = Array.from(form.elements)
+    let statusSelect = document.getElementById("statusSelector")
+    const tableBody = document.getElementById("tableBody")
+    const studentsDiv = document.getElementById('students')
+    const coordinatorsDiv = document.getElementById('coordinators')
+    const companiesDiv = document.getElementById('companies')
+    let opoSelector = document.getElementById("opoSelect")
+    let errorEl = document.getElementsByClassName('error_info');
+    const hiddenopo = document.getElementById('hiddenopo')
+    const coordinator = [[${user.id}]]
+    let opos = [];
+
+    //buttons
+    let buttonsDiv = document.getElementById("buttons")
+    const saveEditButton = document.getElementById("saveEdit")
+    const saveNewButton = document.getElementById("saveNew")
+    const cancelButton = document.getElementById("cancel")
+    const inactiveButton = document.getElementById("inactive")
+    const resetPwButton = document.getElementById("resetPassword")
+    const addToOpoButton = document.getElementById("addSelfToOpo")
+    const csvUploadButton = document.getElementById("csvUpload")
+    const companyApproveButton = document.getElementById("companyApprove")
+
+
+    //csrf token
+    let token = document.head.querySelector("meta[name='_csrf']").getAttribute("content")
+    let header = document.head.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+
+    /*
+      CHECKING FUNCTIONS ------------------------------------------------
+     */
+    //checks if element value is not empty
+    function checkIfNotEmpty(e) {
+        return e.value.trim() !== "";
+    }
+
+    //give error mesages
+    function giveErrorMessage(elements){
+        elements.forEach(el => {
+            if (!checkIfNotEmpty(el))
+                el.parentNode.querySelector("small").innerText = el.getAttribute("id") + " kan niet leeg zijn";
+            else{
+                el.parentNode.querySelector("small").innerText = ""
+            }
+        })
+    }
+
+    //resets form
+    function resetForm() {
+        form.reset()
+        elementsArray.forEach(e => e.value = "")
+        Array.from(errorEl).forEach(el => el.innerHTML = "")
+    }
+
+    //get opo's from server
+    const getOpos = function() {
+        opos = [];
+        fetch("/coordinator/allopos", {
+            method: "GET",
+        }).then(response => response.json())
+            .then(data => {
+                console.log(data)
+                data.forEach(opo => {
+                    opos.push(opo)
+                    let newOption = document.createElement('option')
+                    newOption.textContent = opo['course'] + " - " + opo['startDate'] + " - " + opo['program']
+                    newOption.value = opo['id']
+                    opoSelector.append(newOption)
+                    console.log(opo['id'])
+                })
+                sendRequest('students', opoSelector.value)
+            })
+    }
+
+    //toggle visual difference between types
+    function toggle_selection(type) {
+        let arrayOfGroup = Array.from(document.getElementsByClassName('group'))
+        arrayOfGroup.forEach(div => {
+            if(div.getAttribute('id') === type){
+                if (div.classList.contains('inactive')){
+                    div.classList.remove('inactive')
+                }
+            }
+            else{
+                if (!div.classList.contains('inactive')){
+                    div.classList.add('inactive')
+                }
+            }
+        })
+    }
+
+    // add different buttons
+    function addEditButtons(){
+        buttonsDiv.appendChild(saveEditButton)
+        buttonsDiv.appendChild(cancelButton)
+        buttonsDiv.appendChild(resetPwButton)
+        buttonsDiv.appendChild(inactiveButton)
+        form.appendChild(buttonsDiv)
+    }
+
+    function addNewButtons(){
+        buttonsDiv.appendChild(saveNewButton)
+        buttonsDiv.appendChild(cancelButton)
+        form.appendChild(buttonsDiv)
+    }
+
+    // -----------------------------------------------------------------
+
+    /*
+       MAIN FUNCTIONS --------------------------------------------------
+     */
+
+    //on load - reload
+    getOpos();
+
+
+
+
+    /*
+    Opens modal to create new user
+     */
+    function newObject(type) {
+        resetForm()
+        let elements = buildModal("new", type)
+        $('#userModal').modal("show");
+        cancelButton.onclick = () =>  {
+            $('#userModal').modal("hide");
+            sendRequest(`${type}s`, opoSelector.value)
+        }
+        saveNewButton.onclick = () => {
+            if (!elements.every(checkIfNotEmpty)) {
+                giveErrorMessage(elements)
+            } else {
+                let objectPost
+                switch (type) {
+                       case "student":
+                           objectPost = {
+                               student: {
+                                   firstname: firstname.value,
+                                   lastname: lastname.value,
+                                   studentNumber: number.value,
+                                   opos: [opos.find(o => o.id.toString() === opoSelector.value)],
+                                   status: 'SEARCHING',
+                                   active: true
+                                },
+                                coordinator: {}
+                            }
+                            break;
+
+                        case "coordinator": {
+                            objectPost = {
+                                coordinator: {
+                                    firstname: firstname.value,
+                                    lastname: lastname.value,
+                                    coordinatorNumber: number.value,
+                                    active: true,
+                                    email: email.value,
+                                    opos: [opos.find(o => o.id.toString() === opoSelector.value)],
+                                },
+                                student: {}
+                            }
+                            break;
+                        }
+                    }
+                    fetch("/coordinator/newobject", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-csrf-token': token
+                        },
+                        body: JSON.stringify(objectPost)
+                    }).then(async response => {
+                        let res = response.text()
+                        if (await res === "false") {
+                            number.parentNode.querySelector("small").innerText = "Dit nummer is reeds geregistreerd";
+                        } else {
+                            $('#userModal').modal("hide");
+                            sendRequest(`${type}s`, opoSelector.value)
+                        }
+                    })
+                }
+            }
+    }
+
+
+    /*
+    Gets a list of users (student, coordinator or company)
+     */
+    function sendRequest(type, opo) {
+        tableBody.innerHTML = "";
+        function call() {
+            if (type === "students") {
+                toggle_selection(type)
+                return "?status="
+            }
+            if (type === "coordinators") {
+               toggle_selection(type)
+                return "?input="
+            }
+            if (type === "companies") {
+                toggle_selection(type)
+                return "?input="
+            }
+        }
+        //get elements and fill table
+        let url = `dashboard/${type}${call()}${type === "students" ? statusSelect.value : "all"}&opoId=${opo}`
+        fetch(url, {
+            method: "GET"
+        }).then(response => response.json())
+            .then(data => {
+                console.log(type)
+                let objects = data[type]
+                console.log(objects)
+                if (objects !== undefined) {
+                    objects.forEach(object => {
+
+                        //create elements
+                        let row = document.createElement("tr")
+                        let head = document.createElement("th")
+                        let email = document.createElement("td")
+                        let status = document.createElement("td");
+                        let name = document.createElement("td")
+                        let stage = document.createElement("td");
+                        tableBody.appendChild(row);
+
+                        //set attributes
+                        row.setAttribute("onclick", `getUser(${object.id}, ${type})`)
+                        head.setAttribute("scope", "row")
+                        head.textContent = type === "companies" ? object['id'] : object[`${type.substring(0, type.length - 1)}Number`]
+                        name.textContent = type === "companies" ? object['companyName'] : object['firstname'] + " " + object['lastname']
+                        email.textContent = object['email']
+                        status.textContent = object['status']
+                        stage.textContent = object['company']
+
+                        //append to parent
+                        row.appendChild(head);
+                        row.appendChild(name);
+                        if (type === "students") {
+                            document.getElementById('tableTitle').innerHTML = "Studenten"
+                            document.getElementById("headnumber").innerHTML = "Student number"
+                            document.getElementById("headinternship").style.display = "table-cell"
+                            document.getElementById("headstatus").style.display = "table-cell"
+                            row.appendChild(status);
+                            row.appendChild(stage);
+                            row.appendChild(email);
+                        }
+                        else if (type === "coordinators") {
+                            document.getElementById('tableTitle').innerHTML = "Coordinatoren"
+                            document.getElementById("headnumber").innerHTML = "Coordinator number"
+                            document.getElementById("headstatus").style.display = "none"
+                            document.getElementById("headinternship").style.display = "none"
+                            row.appendChild(email);
+                        }
+                        else if (type === "companies") {
+                            let address = document.createElement("td");
+                            let companyStatus = document.createElement("td");
+                            address.textContent = object['street'] +" "+object['number'] +" "+object['city']
+                            companyStatus.textContent =  object.approved === true ? "Goedgekeurd" : "Wacht op goedkeuring"
+                            document.getElementById('tableTitle').innerHTML = "Bedrijven"
+                            document.getElementById("headnumber").innerHTML = "Bedrijven ID"
+                            document.getElementById("headstatus").style.display = "none"
+                            document.getElementById("headinternship").style.display = "none"
+                            document.getElementById("heademail").innerHTML = "Adres"
+                            row.appendChild(address)
+                            row.appendChild(companyStatus)
+                        }
+
+                    })
+                }
+            })
+    }
+
+
+    /*
+    Gets a user (student, coordinator or company)(depends on current view)
+    and opens modal with user details
+     */
+    function getUser(id, type) {
+        resetForm()
+        type = type.getAttribute('id')
+        let objectGet
+        let allElements
+        modalTitle.innerHTML = `Edit ${type}`;
+        let url = `/coordinator/get${type}details/${id}`
+        fetch(url, {
+            method: "GET"
+        }).then(async response => {
+            objectGet = JSON.parse(await response.text())
+            allElements = buildModal("edit", type, objectGet);
+            $('#userModal').modal("show");
+        })
+        cancelButton.onclick = () =>  {
+            $('#userModal').modal("hide");
+            sendRequest(type, opoSelector.value)
+        }
+        resetPwButton.onclick = () => {
+            fetch("/coordinator/resetpassword/" + id, {
+                method: "GET"
+            }).then(async response => {
+                if (response.status === 200) {
+                    $('#userModal').modal("hide");
+                    sendRequest(type, opoSelector.value)
+                }
+            })
+        }
+        companyApproveButton.onclick = () => {
+            fetch("/coordinator/approvecompany/" + id, {
+                method: "GET"
+            }).then(async response => {
+                if (response.status === 200) {
+                    $('#userModal').modal("hide");
+                    sendRequest(type, opoSelector.value)
+                }
+            })
+        }
+        inactiveButton.onclick = () => {
+            fetch("/coordinator/setinactive/" + id, {
+                method: "GET"
+            }).then(async response => {
+                if (response.status === 200) {
+                    $('#userModal').modal("hide");
+                    sendRequest(type, opoSelector.value)
+                } else {
+                    status.parentNode.querySelector("small").innerText = "status change failed"
+                }
+            })
+        }
+            saveEditButton.onclick = () => {
+                if (!allElements.every(checkIfNotEmpty)) {
+                    giveErrorMessage(allElements)
+                }
+                else{
+                    let url = `/coordinator/save${type}details/${id}`
+                    //build object
+                    let objectPost;
+                    if (type === 'students') {
+                        objectPost =
+                            {
+                                student: {
+                                    id: id,
+                                    firstname: firstname.value,
+                                    lastname: lastname.value,
+                                    email: email.value,
+                                    company: company.value || null,
+                                    studentNumber: number.value,
+                                    status: status.value.toUpperCase(),
+                                    password: objectGet.password,
+                                    active: objectGet.active,
+                                    opos: objectGet.opos
+                                },
+                                coordinator: {},
+                                company: {}
+                            }
+                    }
+                    else if (type === 'coordinators') {
+                        objectPost = {
+                            coordinator: {
+                                id: id,
+                                firstname: firstname.value,
+                                lastname: lastname.value,
+                                email: email.value,
+                                coordinatorNumber: number.value,
+                                password: objectGet.password,
+                                active: objectGet.active,
+                                opos: objectGet.opos
+                            },
+                            student: {},
+                            company: {}
+                        }
+                    }
+                        else if (type === 'companies') {
+                            objectPost = {
+                                company: {
+                                    id: id,
+                                    companyName: companyName.value,
+                                    street: street.value,
+                                    number: streetnumber.value,
+                                    postalCode: postalcode.value,
+                                    city: city.value
+                                },
+                                student: {},
+                                coordinator: {}
+                            }
+                        }
+                        console.log(objectPost)
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-csrf-token': token
+                            },
+                            body: JSON.stringify(objectPost)
+                        }).then(async response => {
+                            let res = await response.text();
+                            if (res === 'false') {
+                                number.parentNode.querySelector("small").innerText = "Dit nummer is reeds geregistreerd";
+                            } else {
+                                $('#userModal').modal("hide");
+                                sendRequest(type, opoSelector.value)
+                            }
+                        })
+                    }
+                }
+    }
+
+
+    /*
+        ADDS CURRENT COORDINATOR TO SELECTED OPO
+     */
+    addToOpoButton.addEventListener('click', event => {
+        fetch(`/coordinator/dashboard/addtoopo/${coordinator}?opo=${opoSelector.value}`, {
+            method: "GET"
+        }).then(async response => {
+            if (response.status === 200) {
+                $('#userModal').modal("hide");
+                sendRequest(coordinator, opoSelector.value)
+            } else {
+                console.log("failed to add to opo")
+            }
+        })
+    })
+
+
+    /*
+        UPLOADS CSV FILE WITH STUDENTS
+     */
+
+   uploadForm.addEventListener("submit", event => {
+        event.preventDefault()
+        uploadForm.setAttribute("th:action", `@{|/csvupload/${opoSelector.value}|}`)
+        uploadForm.submit()
+    })
+
+
+    /*
+        BUILDS DYNAMIC MODAL
+     */
+
+    function buildModal(dest, type, object) {
+        console.log(dest)
+        while (form.hasChildNodes()) {
+            form.removeChild(form.lastChild);
+        }
+        while (buttonsDiv.hasChildNodes()) {
+            buttonsDiv.removeChild(buttonsDiv.lastChild)
+        }
+        modalTitle.innerText = type === "student" ? "Nieuwe student" : type === "coordinator" ? "Nieuwe coordinator" : type === "company" ? "Nieuw bedrijf" : null;
+        let allElements
+        if (dest === "new") {
+            switch (type) {
+                case "student":
+                    allElements = elementsArray.filter(e => {
+                        return e.id === 'firstname' || e.id === 'lastname' || e.id === 'number'
+                    })
+                    break;
+                case "coordinator":
+                    allElements = elementsArray.filter(e => {
+                        return e.id === 'firstname' || e.id === 'lastname' || e.id === 'number' || e.id === 'email' || e.id === 'opo'
+                    })
+                    break;
+            }
+            allElements.forEach(element => {
+                let el = element.parentNode
+                form.appendChild(el)
+            })
+            addNewButtons()
+        }
+        else if (dest === "edit") {
+            switch (type) {
+                case "students":
+                    allElements = elementsArray.filter(e => {
+                        return e.id === 'firstname' || e.id === 'lastname' || e.id === 'email' || e.id === 'status'
+                    })
+                    allElements.forEach(element => {
+                        let el = element.parentNode
+                        form.appendChild(el)
+                    })
+                    console.log(allElements)
+                    let index;
+                    if (object.status !== null) {
+                        switch (object.status.toLowerCase()) {
+                            case "searching":
+                                index = 0;
+                                break;
+                            case "contacted":
+                                index = 1;
+                                break;
+                            case "approved":
+                                index = 2;
+                                break;
+                        }
+                    } else {
+                        index = 0
+                    }
+                    status.options[index].selected = true;
+                    company.value = object.company !== null ? object.company.companyName : null;
+                    number.value = object.studentNumber
+                    break;
+                case "coordinators":
+                    allElements = elementsArray.filter(e => {
+                        return e.id === 'firstname' || e.id === 'lastname' || e.id === 'email' || e.id === 'opo'
+                    })
+                    allElements.forEach(element => {
+                        let el = element.parentNode
+                        form.appendChild(el)
+                    })
+                    number.value = object.coordinatorNumber
+                    break;
+                case "companies":
+                    allElements = elementsArray.filter(e => {
+                        return e.id === 'companyName' || e.id === 'street' || e.id === 'streetnumber' || e.id === 'postalcode' || e.id === 'city'
+                    })
+                    allElements.forEach(element => {
+                        let el = element.parentNode
+                        form.appendChild(el)
+                    })
+                    companyName.value = object.companyName
+                    street.value = object.street
+                    streetnumber.value = object.number
+                    postalcode.value = object.postalCode
+                    city.value = object.city
+                    buttonsDiv.appendChild(companyApproveButton)
+                    break;
+            }
+            firstname.value = object.firstname
+            lastname.value = object.lastname
+            email.value = object.email
+            addEditButtons()
+
+        }
+        return allElements
+    }
+</script>
+
+
+<div th:replace="fragments/js :: bootstrapjs"></div>
+</body>
+</html>
